@@ -19,31 +19,46 @@ static void writeResponse(crow::response& resp, int code, const std::string& mes
     resp.set_header("Content-Length", os.str());
     resp.end(message);
 }
+
 static void responseStaticResource(const crow::request& req, crow::response& resp, const std::string &webServerPath, std::string path)
 {
 	auto iter = req.headers.find("Origin");
-	if (iter != req.headers.end()) {
+	if (iter != req.headers.end()) 
+	{
 		resp.set_header("Access-Control-Allow-Origin", iter->second);
 	}
-
 	std::smatch match;
-	if (std::regex_match(path, match, std::regex("^.+\\.([A-Za-z][A-Za-z0-9]*)$"))) {
+	if (std::regex_match(path, match, std::regex("^.+\\.([A-Za-z][A-Za-z0-9]*)$"))) 
+	{
 		std::string fileType = match[1];
 		std::transform(fileType.begin(), fileType.end(), fileType.begin(), ::tolower);
 		std::string contentType = "text/plain";
-		if ("html" == fileType || "htm" == fileType) {
+		if ("html" == fileType || "htm" == fileType) 
+		{
 			contentType = "text/html";
-		} else if ("js" == fileType) {
+		} 
+		else if ("js" == fileType) 
+		{
 			contentType = "application/javascript";
-		} else if ("css" == fileType) {
+		} 
+		else if ("css" == fileType) 
+		{
 			contentType = "text/css";
-		} else if ("gif" == fileType) {
+		} 
+		else if ("gif" == fileType) 
+		{
 			contentType = "image/gif";
-		} else if ("png" == fileType) {
+		} 
+		else if ("png" == fileType) 
+		{
 			contentType = "image/png";
-		} else if ("jpg" == fileType) {
+		} 
+		else if ("jpg" == fileType) 
+		{
 			contentType = "image/jpeg";
-		} else if ("ico" == fileType) {
+		} 
+		else if ("ico" == fileType) 
+		{
 			contentType = "image/x-icon";
 		}
 
@@ -55,7 +70,8 @@ static void responseStaticResource(const crow::request& req, crow::response& res
         }
 
 		std::ifstream in(fileName);
-		if (in.is_open()) {
+		if (in.is_open()) 
+		{
 			std::string buffer{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
 			resp.set_header("Content-Type", contentType);
 			std::ostringstream os;
@@ -66,7 +82,6 @@ static void responseStaticResource(const crow::request& req, crow::response& res
 			return;
 		} 
 	}
-
 	std::string error("Not found /" + path);
 	writeResponse(resp, 404, error);
 }
