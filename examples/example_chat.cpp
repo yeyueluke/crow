@@ -2,11 +2,74 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <regex>
+#include <boost/filesystem.hpp>
+using namespace boost;
 
 using namespace std;
 
 vector<string> msgs;
 vector<pair<crow::response*, decltype(chrono::steady_clock::now())>> ress;
+
+static void writeResponse(crow::response& resp, int code, const std::string& message)
+{
+    resp = crow::response(code);
+    std::ostringstream os;
+    os << message.length();
+    resp.set_header("Content-Length", os.str());
+    resp.end(message);
+}
+static void responseStaticResource(const crow::request& req, crow::response& resp, const std::string &webServerPath, std::string path)
+{
+	auto iter = req.headers.find("Origin");
+	if (iter != req.headers.end()) {
+		resp.set_header("Access-Control-Allow-Origin", iter->second);
+	}
+
+	std::smatch match;
+	if (std::regex_match(path, match, std::regex("^.+\\.([A-Za-z][A-Za-z0-9]*)$"))) {
+		std::string fileType = match[1];
+		std::transform(fileType.begin(), fileType.end(), fileType.begin(), ::tolower);
+		std::string contentType = "text/plain";
+		if ("html" == fileType || "htm" == fileType) {
+			contentType = "text/html";
+		} else if ("js" == fileType) {
+			contentType = "application/javascript";
+		} else if ("css" == fileType) {
+			contentType = "text/css";
+		} else if ("gif" == fileType) {
+			contentType = "image/gif";
+		} else if ("png" == fileType) {
+			contentType = "image/png";
+		} else if ("jpg" == fileType) {
+			contentType = "image/jpeg";
+		} else if ("ico" == fileType) {
+			contentType = "image/x-icon";
+		}
+
+		std::string fileName = webServerPath + "webapp/" + path;
+        if (filesystem::exists(filesystem::path(fileName + ".gz")))
+        {
+            fileName += ".gz";
+            resp.set_header("Content-Encoding", "gzip");
+        }
+
+		std::ifstream in(fileName);
+		if (in.is_open()) {
+			std::string buffer{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+			resp.set_header("Content-Type", contentType);
+			std::ostringstream os;
+			os << buffer.length();
+			resp.set_header("Content-Length", os.str());
+			resp.write(buffer);
+			resp.end();
+			return;
+		} 
+	}
+
+	std::string error("Not found /" + path);
+	writeResponse(resp, 404, error);
+}
 
 void broadcast(const string& msg)
 {
@@ -26,6 +89,7 @@ void broadcast(const string& msg)
 // To see how it works go on {ip}:40080 but I just got it working with external build (not directly in IDE, I guess a problem with dependency)
 int main()
 {
+    string webServerPath = "/path/to/html_dir/";
     crow::SimpleApp app;
     crow::mustache::set_base(".");
 
@@ -85,6 +149,11 @@ int main()
         return "";
     });
 
+    app.route_dynamic("/<path>")
+    ([&webServerPath](const crow::request& req, crow::response& resp, std::string path) {
+        responseStaticResource(req, resp, webServerPath, path);
+    });
+    
     app.port(40080)
         //.multithreaded()
         .run();
