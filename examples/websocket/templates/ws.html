@@ -15,6 +15,7 @@ var sock = new WebSocket("ws://{{servername}}:40080/ws");
 
 sock.onopen = ()=>{
     console.log('open')
+	sock.binaryType = 'arraybuffer';
 }
 sock.onerror = (e)=>{
     console.log('error',e)
@@ -23,8 +24,48 @@ sock.onclose = ()=>{
     console.log('close')
 }
 sock.onmessage = (e)=>{
-    $("#log").val(
-            e.data +"\n" + $("#log").val());
+    //$("#log").val(e.data +"\n" + $("#log").val());
+	if(typeof(evt.data)=="string")
+	{  
+		//textHandler(JSON.parse(evt.data));  
+	}
+	else
+	{
+		 var data = new Uint8Array(evt.data);
+		 console.log(data.length);
+		 //for(var i = 0;i < 10; i++)
+		 //   console.log((data[i]).toString(16));
+		 /*
+		 var data_bin = '';
+		 for(var i = 0; i < data.length; i++)
+			 data_bin += String.fromCharCode(data[i]);
+		 //console.log(data_bin);
+		 /*var str11 = arrayBufferToBase64(data);
+
+		 function arrayBufferToBase64(buffer){
+			 var data_bin = '';
+			 var data_bytes =  new Uint8Array(evt.data);
+		 }
+		 var outputImg = document.createElement('img');
+		 outputImg.src = 'data:image/jpg;base64,'+ data_bin;
+		 window.btoa(data_bin);
+	  */ 
+		var str12 = arrayBufferToBase64(data);
+		console.log(str12);
+		var outputImg = document.createElement('img');
+		outputImg.src = 'data:image/*;base64,'+str12;
+		document.body.appendChild(outputImg);
+		console.log(outputImg);
+		function arrayBufferToBase64(buffer){
+			var binary = '';
+			var bytes = new Uint8Array(buffer);
+			var len = bytes.byteLength;
+			for(var i = 0; i < len; i++){
+				binary += String.fromCharCode(bytes[i]);
+			}
+			return window.btoa(binary);
+		}
+	}  
 }
 $("#msg").keypress(function(e){
     if (e.which == 13)
