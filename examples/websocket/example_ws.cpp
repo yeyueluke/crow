@@ -2,7 +2,7 @@
 #include <unordered_set>
 #include <mutex>
 
-
+#define MYMAP "/home/nvidia/tst/web_tst/crow-master/build/examples/templates/time.jpg"
 int main()
 {
     crow::SimpleApp app;
@@ -26,7 +26,32 @@ int main()
                 std::lock_guard<std::mutex> _(mtx);
                 for(auto u:users)
                     if (is_binary)
-                        u->send_binary(data);
+                    {
+						//u->send_binary(data);
+						struct stat buf;
+
+                        if( stat(MYMAP, &buf ) != -1 )
+                            printf( "File size = %d\n", buf.st_size);       
+                      
+                        fstream f(MYMAP, ios::in | ios::binary);
+                        if (f.bad()) 
+                            cout << "bad file open" << endl;
+                            
+                        unsigned char *img = new unsigned char[buf.st_size];
+                        f.read((char*)img, buf.st_size);
+                        f.close();
+                        string imgstr((char *)img,buf.st_size);
+                        u->send_binary(imgstr);    
+
+                        /*ofstream origin1("bb.dat");
+                        origin1.write((char*)imgstr.data(),imgstr.size());
+                        origin1.close();
+                        cout << "imgstr.size " << imgstr.size() << endl;
+                        //cout << "binary  data " << data << endl;
+                        for(int i = 0; i < data.size();i++)
+                            printf("0x%x ",data[i]);
+                        printf("\n")*/
+					}	
                     else
                         u->send_text(data);
                 });
