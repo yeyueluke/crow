@@ -1,0 +1,265 @@
+<!doctype html>
+<html>
+<head>
+    <script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/fabric.js/3.6.3/fabric.min.js"></script>
+</head>
+<body>
+    <input id="msg" type="text"><br/>
+    <input id="msg1" type="text"><br/>
+    <button id="send">Send</button><BR>
+    <canvas id="canvas" width='800' height='800'></canvas>
+    <script>
+
+    function InsertString(t, c, n) {
+        var r = new Array();
+        for (var i = 0; i * 2 < t.length; i++) {
+            r.push(t.substr(i * 2, n));
+        }
+        return r.join(c);
+    }
+    function FillString(t, c, n, b) {
+        if ((t == "") || (c.length != 1) || (n <= t.length)) {
+            return t;
+        }
+        var l = t.length;
+        for (var i = 0; i < n - l; i++) {
+            if (b == true) {
+                t = c + t;
+            }
+            else {
+                t += c;
+            }
+        }
+        return t;
+    }
+		function HexToSingle(t) {
+        if (t == "") {
+            return "";
+        }
+        if (t == "00000000") {
+            return "0";
+        }
+        if ((t.length > 8) || (isNaN(parseInt(t, 16)))) {
+            return "Error";
+        }
+        if (t.length < 8) {
+            t = FillString(t, "0", 8, true);
+        }
+        t = parseInt(t, 16).toString(2);
+        t = FillString(t, "0", 32, true);
+        var s = t.substring(0, 1);
+        var e = t.substring(1, 9);
+        var m = t.substring(9);
+        e = parseInt(e, 2) - 127;
+        m = "1" + m;
+        if (e >= 0) {
+            m = m.substr(0, e + 1) + "." + m.substring(e + 1)
+        }
+        else {
+            m = "0." + FillString(m, "0", m.length - e - 1, true)
+        }
+        if (m.indexOf(".") == -1) {
+            m = m + ".0";
+        }
+        var a = m.split(".");
+        var mi = parseInt(a[0], 2);
+        var mf = 0;
+        for (var i = 0; i < a[1].length; i++) {
+            mf += parseFloat(a[1].charAt(i)) * Math.pow(2, -(i + 1));
+        }
+        m = parseInt(mi) + parseFloat(mf);
+        if (s == 1) {
+            m = 0 - m;
+        }
+        return m;
+    }
+		//var sock = new WebSocket("ws://{{servername}}:40080/ws");
+    var sock = new WebSocket("ws://192.168.0.103:40080/ws");
+    function heart()
+    {
+        var buffer = new ArrayBuffer(16);
+			  var int32View = new Int32Array(buffer);
+			  for (var i=0; i<int32View.length; i++) {
+			      int32View[i] = i*2;
+			  }
+			  //sock.send(int32View);
+    }
+		sock.onopen = ()=>{
+      sock.binaryType = 'arraybuffer';
+			console.log('open')
+      self.setInterval("heart()",1000);
+		}
+		sock.onerror = (e)=>{
+			console.log('error',e)
+		}
+		sock.onclose = ()=>{
+			console.log('close')
+		}
+		sock.onmessage = (evt)=>{
+		    console.log('recv');
+		    /*if(evt.data == "qqqq")
+		    {
+				window.opener=null;
+				window.open('','_self');
+				window.close();
+
+		        window.open('example_chat.html');
+		    }*/
+		    if(typeof(evt.data)=="string")
+		    {
+				//textHandler(JSON.parse(evt.data));
+			}
+			else
+			{
+				 var data = new Uint8Array(evt.data);
+				 console.log(data.length);
+         var a = new Array();
+         for(var i=0; i < 384; i++){       
+             a[i] = new Array();
+             for(var j=0; j < 384; j++){ 
+                 a[i][j] = data[j + i * 384];
+             }
+         }
+         var canvas = new fabric.Canvas('canvas');
+         /*var tmp = new fabric.Circle({radius: 1,
+                     fill: '',
+                     stroke: a[0][0],
+                     strokeWidth: 1,
+                     top: 100,
+                     left: 100,
+                   }); 
+         canvas.add(tmp);*/
+         var xx = [], yy = [], arr = [];
+         var j = 0;
+         for(var i = 0; i < 384; i++)
+         {
+             for(var j=0; j < 384; j++){ 
+                 //console.log(a[i][j]); 
+                 var tmp = new fabric.Circle({radius: 1,
+                     fill: '',
+                     stroke: a[i][j],
+                     strokeWidth: 1,
+                     top: 100 + i,
+                     left: 100 + j,
+                   }); 
+                 arr.push(tmp);
+             }
+         }
+         var grp = new fabric.Group(arr,{lockScalingx:true,lockScalingy:true});
+         canvas.add(grp);
+
+         /* var tofloat = []
+				  for(var i = 0;i < 1440; i += 4)
+          {
+              var num0 = data[i];
+              var num1 = data[i + 1];
+              var num2 = data[i + 2];
+              var num3 = data[i + 3];
+              var tmp = 50 * HexToSingle(num3.toString(16) + num2.toString(16) + num1.toString(16) +num0.toString(16));
+              tofloat.push(tmp);
+          }
+          
+         var canvas = new fabric.Canvas('canvas');
+         var xx = [], yy = [], arr = [];
+         for(var i = 0; i < 360; i++)
+         {
+             xx[i] = tofloat[i] * Math.sin(0.0174532923847 * i);
+             yy[i] = tofloat[i] * Math.cos(0.0174532923847 * i);
+             var tmp = new fabric.Circle({radius: 1,
+                 fill: '',
+                 stroke: 'red',
+                 strokeWidth: 1,
+                 top: 400 + xx[i],
+                 left: 400 - yy[i],
+                 originX: 'center', 
+                 originY: 'center' 
+               }); 
+             arr.push(tmp);
+         }
+         var grp = new fabric.Group(arr,{lockScalingx:true,lockScalingy:true,originX:'center',originY:'center'});
+         canvas.add(grp);
+         */
+         /*var line = new fabric.Line(data, {
+             fill: 'green',
+             stroke: 'green',   
+             strokeWidth: 2,
+         });
+         canvas.add(line);*/
+         /*var xx = [], yy = [], arr = [];
+         for(var i = 0; i < 360; i++)
+         {
+             xx[i] = 200 * Math.sin(0.0174532923847 * i);
+             yy[i] = 200 * Math.cos(0.0174532923847 * i);
+             //var tmp = new fabric.Line([200,200, 200 + xx[i],200 - yy[i]],{fill: 'green', stroke: 'green', strokeWidth: 1,});
+             var tmp = new fabric.Circle({radius: 1,
+                 fill: '',
+                 stroke: 'red',
+                 strokeWidth: 1,
+                 top: 400 + xx[i],
+                 left: 400 - yy[i],
+                 originX: 'center', 
+                 originY: 'center' 
+               });
+             arr.push(tmp);
+         }
+         var grp = new fabric.Group(arr,{lockScalingx:true,lockScalingy:true,originX:'center',originY:'center'});
+         canvas.add(grp);*/
+          //for(var i = 0;i < 10; i++)
+				  //   console.log((data[i]).toString(16));
+				 /*
+				 var data_bin = '';
+				 for(var i = 0; i < data.length; i++)
+				     data_bin += String.fromCharCode(data[i]);
+				 //console.log(data_bin);
+				 /*var str11 = arrayBufferToBase64(data);
+
+				 function arrayBufferToBase64(buffer){
+				     var data_bin = '';
+				     var data_bytes =  new Uint8Array(evt.data);
+				 }
+				 var outputImg = document.createElement('img');
+				 outputImg.src = 'data:image/jpg;base64,'+ data_bin;
+				 window.btoa(data_bin);
+			  */
+			 /*   var str12 = arrayBufferToBase64(data);
+				console.log(str12);
+				var outputImg = document.createElement('img');
+				outputImg.src = 'data:image/*;base64,'+str12;
+				document.body.appendChild(outputImg);
+				console.log(outputImg);
+				function arrayBufferToBase64(buffer){
+					var binary = '';
+					var bytes = new Uint8Array(buffer);
+					var len = bytes.byteLength;
+					for(var i = 0; i < len; i++){
+						binary += String.fromCharCode(bytes[i]);
+					}
+					return window.btoa(binary);
+				}
+			*/
+			}
+
+			//$("#log").val(e.data + "\n" + $("#log").val());
+		}
+		$("#msg1").keypress(function(e){
+			if (e.which == 13)
+			{
+				sock.send($("#msg").val() + " " + $("#msg1").val());
+				$("#msg").val("");
+			}
+		});
+		$("#send").click(()=>{
+			//sock.send($("#msg").val() + " " + $("#msg1").val());
+			//$("#msg").val("");
+
+			var buffer = new ArrayBuffer(16);
+			var int32View = new Int32Array(buffer);
+			for (var i=0; i<int32View.length; i++) {
+			  int32View[i] = i*2;
+			}
+			sock.send(int32View);
+		});
+    </script>
+</body>
+</html>
