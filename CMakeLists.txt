@@ -11,7 +11,17 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 find_package(Tcmalloc)
 find_package(Threads)
 find_package(OpenSSL)
-
+####use ros
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  rospy
+  std_msgs
+)
+include_directories(
+# include
+  ${catkin_INCLUDE_DIRS}
+)
+######
 if(OPENSSL_FOUND)
 	include_directories(${OPENSSL_INCLUDE_DIR})
 endif()
