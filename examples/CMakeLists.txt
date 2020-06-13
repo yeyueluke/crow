@@ -17,7 +17,7 @@ if (OPENSSL_FOUND)
 endif()
 
 add_executable(example_websocket websocket/example_ws.cpp)
-target_link_libraries(example_websocket ${Boost_LIBRARIES})
+target_link_libraries(example_websocket ${Boost_LIBRARIES} ${catkin_LIBRARIES})
 target_link_libraries(example_websocket ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_LIBRARIES})
 add_custom_command(OUTPUT ws.html
     COMMAND ${CMAKE_COMMAND} -E
